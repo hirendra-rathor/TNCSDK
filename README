@@ -1,0 +1,412 @@
+			    TNC SDK README
+
+1. Overview of TNC and the TNC SDK
+
+Trusted Network Connect (TNC) is an open architecture and set of open
+standards for Network Access Control (NAC) defined by the Trusted
+Computing Group. More information about TNC is available from
+https://www.trustedcomputinggroup.org/groups/network
+
+Many commercial products implement the TNC standards and there are
+several open source implementations. Using open standards for NAC
+makes a lot of sense since NAC generally involves integrating multiple
+components: endpoint security software, policy servers, network
+enforcement, etc. Using open standards allows these components to plug
+together using standard interfaces, thus simplifying integration and
+avoiding compatibility problems caused by having dozens of proprietary
+interfaces.
+
+The TNC SDK is an open source toolkit that makes it easy for anyone to
+implement plug-in modules called IMCs and IMVs that can be used in a
+TNC system.
+
+2. The TNC Architecture
+
+To understand what that means, let's take a quick dip into the TNC
+architecture. IMC stands for Integrity Measurement Collector. IMV
+stands for Integrity Measurement Verifier. Typically, an IMC gathers
+data ("measurements") from an endpoint and sends them to a matching
+IMV on the policy server (called a TNCS). The IMV uses the
+measurements to decide whether the endpoint is healthy or needs to be
+quarantined and repaired. The IMV sends its recommendation on this to
+the TNCS, which puts it into practice. The IMC and IMV are small
+software modules that interface with the rest of the TNC system
+through standard APIs called IF-IMC and IF-IMV.
+
+This is a simplified view of the TNC architecture. There are many more
+standards that provide other important extension points. For the full
+picture, download and read the TNC architecture, white papers, and
+standards from the TNC web site listed above.
+
+3. Why Write an IMC and IMV?
+
+You may be wondering "Why would I want to write my own IMC and IMV?"
+That's a good question. Most TNC implementations come with many IMCs
+and IMVs built-in, allowing you to check what anti-virus software is
+loaded on an endpoint, etc. But what if you want to perform a special
+check on the endpoint? Some TNC products allow you to customize their
+IMCs and IMVs a bit but maybe you want to do something beyond that.
+Or maybe you're a vendor who wants to interface your product to the
+TNC architecture. Or maybe you just want to fool around with TNC a
+bit. Then the TNC SDK is just the thing for you.
+
+4. Licensing
+
+The TNC SDK is an open source project that uses a BSD license. The
+full text of the license is included in the LICENSE.TXT file in the
+TNC SDK. That's the place to go for legal information but if you do a
+bit of research you will find that this license is one of the broadest
+and most flexible open source licenses. This is good because it allows
+the TNC SDK can be used for almost any purpose and promotes the widest
+possible adoption of the TNC standards.
+
+If you would like to contribute to the TNC SDK, please send email to
+tncsdk-contribute@juniper.net.
+
+5. Contents of the TNC SDK
+
+The TNC SDK includes source code and some prebuilt binary executables
+for the following:
+
+* SimpleIMC, a simple IMC (intended for sample code)
+
+* SimpleIMV, a simple IMV (intended for sample code)
+
+* IMCIMVTester, a test program for IMCs and IMVs
+
+The source code is in the src directory and the binaries are in
+subdirectories of the bin directory. The root directory contains the
+TNC SDK README.TXT (this file) and a LICENSE.TXT file.
+
+5.1. Description of SimpleIMC
+
+SimpleIMC is a simple IMC that you can use as the basis for writing
+your own IMC. The IMC attempts to open and read from a file named
+"C:\OK" on Windows ("/OK" on other platforms). If it succeeds,
+SimpleIMC sends an integrity measurement with a message type of
+0x005597FE and message contents of the NUL-terminated ASCII string
+"OK". Otherwise, it sends an integrity measurement with a message
+type of 0x005597FE and message contents of the NUL-terminated ASCII
+string "Problem".
+
+You can easily change SimpleIMC to provide different integrity
+measurements, accept remediation instructions from the IMV, or
+whatever is appropriate for your needs. The "How to Create Your
+Own IMC and IMV" section below explains how to do this. The
+current code is simply intended to provide a small example.
+
+5.2. Description of SimpleIMV
+
+SimpleIMV is a simple IMV that you can use as the basis for writing
+your own IMV. The IMV expects to receive a single message with message
+type 0x005597FE from the SimpleIMC. If no such message is received or
+if the message content is not the NUL-terminated ASCII string "OK", then
+SimpleIMV recommends no access. Otherwise, it recommends that access
+be granted.
+
+You can easily change SimpleIMV to understand different integrity
+measurements and policies, send remediation instructions, or whatever
+is appropriate for your needs. The "How to Create Your Own IMC and
+IMV" section below explains how to do this.
+
+5.3. Description of IMCIMVTester
+
+The IMCIMVTester is a command line utility that loads an IMC and IMV
+and simulates a TNC integrity check handshake to exercise their
+functionality. It does not support all features of the latest versions
+of the IF-IMC and IF-IMV APIs. More features will be added over time.
+
+The IMCIMVTester allows you to easily test your IMC and IMV and debug
+them within a single process. This makes testing and debugging easier.
+Of course, later in the development process you will also want to test
+your IMC and IMV with a real TNCC and TNCS product. Some things are
+different in the real world. For example, there are often limits on
+how many messages can be sent back forth between an IMC and IMV.
+
+To see information about the command line switches supported by the
+IMCIMVTester, use the "-?" switch.
+
+6. A Simple Demonstration
+
+To see the TNC IF-IMC and IF-IMV APIs in action, run the IMCIMVTester
+binary for your platform. It will start up and load the SimpleIMC and
+SimpleIMV. Then it will prompt you to start the handshake. Press ENTER
+a few times to complete the handshake. The handshake should succeed
+if an OK file exists in the root directory and is readable by the IMC.
+
+7. Building the TNC SDK
+
+As noted above, binary executable versions of the software in the
+TNC SDK are included in the bin directory. However, you may want to
+build the software for a platform whose binaries are not included or
+rebuild the software for a platform whose binaries are included.
+To do this, follow these steps:
+
+For 32-bit Windows:
+1) Open TNCSDK.sln using Microsoft Visual Studio 11.0 or later.
+2) Select the project and configuration that you wish to build.
+3) Select the Build command
+
+For Linux and UNIX:
+***Add Linux/UNIX build instructions here
+
+8. How to Create Your Own IMC and IMV
+
+Building an IMC and IMV is generally not difficult. The easiest way to
+do it is to start with the source code for the SimpleIMC and
+SimpleIMV, make incremental changes, and use the IMCIMVTester
+periodically to verify that things are still working.
+
+However, if you want to create a production-quality IMC and IMV, you
+may want to follow this more formal process.
+
+8.1. Request a SMI Private Enterprise Number If Needed
+
+SimpleIMC and SimpleIMV use a message type that is only intended for
+experimental use. For production use, you REALLY must get your own
+message type number. Otherwise, your IMC and IMV may receive messages
+from experimental IMCs and IMVs and your IMC and IMV's messages may be
+received by experimental IMCs and IMVs. As you can imagine, that can
+cause some real problems!
+
+8.1.1. To define a new message type, your organization will need to
+have a SMI Private Enterprise Number assigned to it. Check the
+registry at http://www.iana.org/assignments/enterprise-numbers to see
+if your organization (or a parent organization) already has such a
+number. If so, skip this step. 
+
+8.1.2. If your organization does not appear in the SMI Private
+Enterprise Number registry, use the application at
+http://www.iana.org/cgi-bin/enterprise.pl to request a Private
+Enterprise Number for your organization. There is no charge for
+requesting such a number but you will need to decide on a contact for
+your organization who will be responsible for tracking TNC message
+subtypes and other uses of the number to ensure that these uses do not
+conflict. If the link given above for the application does not work,
+go to http://www.iana.org to find the latest link. Note that the web
+site says "The normal time for completing the application process is
+30 days" so you should apply as soon as possible. During the waiting
+period, you may use the experimental message type used in SimpleIMC
+and SimpleIMV but you MUST NOT deploy this.
+
+8.2. Read the TNC Specifications
+
+If you haven't read the most basic TNC specifications (TNC Architecture,
+IF-IMC, and IF-IMV), do so. You will need to understand these well to
+implement a production-quality IMC and IMV.
+
+8.3. Agree on Requirements
+
+As with most software development efforts, it's best to start by
+defining and agreeing on the requirements for your project. Here are a
+few questions to consider:
+
+* What integrity policies do you have to support? A simple policy
+  could specify a minimum version number for a particular piece of
+  endpoint security software. A more complex policy might support
+  multiple software vendors and versions, check how the software is
+  configured, scan logs for suspicious activity, etc.
+
+* What remediation do you have to support? The simplest approach is to
+  do no remediation. Another simple technique is to have the IMC
+  display a message telling the user what's wrong and how to fix it.
+  Automated remediation is generally more complex.
+
+* What will trigger an integrity check? Most commonly, these checks
+  are performed only when the endpoint attempts to gain access to a
+  network. However, you may want to trigger another check (a handshake
+  retry) after remediation is complete, when a troubling condition is
+  detected by the endpoint or a server (like an IDS), and/or when the
+  integrity policy changes. These can be done by having the IMC and
+  IMV trigger an integrity check handshake retry.
+
+* What endpoint and server configurations must you support? If you
+  need to support a variety of operating systems and hardware
+  configurations, your code must be portable. 
+
+* Do you have any other special requirements?
+
+Make sure that all necessary parties have agreed to your requirements.
+While waiting for this approval, you can begin the next few steps. 
+
+8.4. Prepare a Functional Design
+
+Now that your requirements are set, create a functional design for
+your IMC and IMV. What will they do and how (in broad functional
+terms) will they do it?
+
+Start by sketching out the flow of IMC-IMV messages. In a simple case,
+the IMC will report measurements to the IMV and the IMV will respond
+by evaluating the IMC's compliance with the integrity policy, sending
+remediation instructions to the IMC (optional), and giving a network
+access recommendation to the TNCS.
+
+However, there can be a few gotchas with this simple design. The
+IMC-IMV message exchange must be short and efficient. The user (maybe
+your CEO) will be sitting and waiting while this exchange takes place.
+And many TNC systems have tight limits on the amount of data that can
+be sent and the number of round trips allowed between the IMC and IMV.
+If you exceed these limits, things won't work. It may be better to
+have the client store the policy and simply tell the server "I comply
+with policy FOO version 36." Then the server can decide whether that's
+good enough. If the policy stored on the client is too old, the server
+can send the new policy (if it's small) or quarantine the client so it
+can get a copy of the new policy.
+
+Once you have a message flow that supports your requirements, consider
+how your IMC will gather the information it needs. Will it check
+registry entries or file signatures or use an established API? Will it
+talk to a separate process that has all the answers? The IMC shouldn't
+take more than a few seconds at most in gathering client data. If this
+is a problem for you, have a background process gather the data. The
+IMC can just send the last data gathered.
+
+Also consider the policies your IMV will implement. Where should they
+be stored and how should they be managed? What should their format be?
+Will the IMV make policy decisions itself or depend on a separate
+process that makes those decisions? In the latter case, how will it
+talk to that process?
+
+You may also need to design a remediation process, but this is not
+really in scope for the IMC or IMV.
+
+8.5. Create a Detailed Design
+
+Now that you have a functional design, you should create a more
+detailed design describing how you plan to implement the IMC and
+IMV. At least, you should specify your interfaces: the message format
+to be used between your IMC and IMV and the policy language to be used
+to express integrity policies. You can make any choices you want here
+since there are no requirements to be compatible with others in these
+respects, but here are a few common design issues you should
+consider.
+
+* Plan ahead. Design your message format and policy language so that
+  they can be extended later.
+
+* Consider cross-platform issues. Even if you only need to support one
+  platform now, you may need to support others later.
+
+* Consider internationalization. Don't assume everyone uses English.
+
+* Decide how to install your IMC and IMV. The installer must place the
+  path to the IMC and IMV in specific locations, as defined in the
+  IF-IMC and IF-IMV specifications.
+
+* Remember that your IMV must be thread-safe. The IMCIMVTester does
+  not test this but a production-grade TNCS will do so.
+
+8.6. Implement Your IMC and IMV
+
+Time to write some code! What language should you use? IF-IMC and
+IF-IMV are abstract APIs so, in theory, you can implement an IMC and
+IMV in any language. In practice, most TNC implementations support
+one of these bindings for IF-IMC and IF-IMV: the Microsoft Windows DLL
+Platform Binding and the UNIX/Linux Dynamic Linkage Platform Binding.
+C and C++ are good matches for these bindings but other languages may
+work also. SimpleIMC and SimpleIMV are implemented in C, of course.
+
+8.7. Test Your IMC and IMV
+
+If your code's not tested, it probably doesn't work. The easiest way
+to do simple testing is to use IMCIMVTester. This application will
+load your IMC and IMV into a single process and initiate an integrity
+check handshake between them. This allows you to step through your
+code with no network timeouts, threading issues, etc.
+
+Here are a few debugging hints from an experienced IMC/IMV author:
+
+* Remember, the messages between the IMV and IMC are BINARY. If you
+  send a text string, make sure it's either a counted string or you
+  include the ending NUL character in your lengths. This also applies
+  to any attributes that you set.
+
+* The handshake may be ending before you think it should. This could
+  be because another IMV/IMC pair has made its recommendation and
+  yours is redundant or because the handshake has taken too long.
+  Depending on the transport layer, timeouts can be as low as 3-4
+  seconds. With some transports, it may be possible to extend these by
+  passing "keep alive" messages between your IMV and IMC while doing
+  the work in a background thread.
+
+* Make sure you are registering for the messages you think you are.
+
+* Remember that any messages you send after you have made a
+  recommendation in a given round may not be delivered. Any
+  remediation messages should be sent before you make a
+  recommendation. And remember that the TNCS is allowed to finish the
+  handshake at any time, even if you're not done!
+
+* Your IMV may receive a call to TNC_IMV_SolicitRecommendation as the
+  handshake finishes even though it has already given a recommendation
+  for this connection. This is allowed by the spec. It should be
+  handled by giving the same recommendation as previously provided
+  (unless it has changed.) Note that this may require you to store
+  recommendations for active connections in a thread-safe data
+  structure (since the IMV must be thread-safe). What a pain!
+
+* Be very careful if you want to use COM on Windows. The TNCS and TNCC
+  may have initialized COM for you, but it's not required. If the TNCS
+  or TNCC has initialized COM and you attempt to initialize it, bad
+  things could happen if you use different parameters. This may only
+  show up when you encounter a TNCS or TNCC that happens to use
+  different parameters from you.
+
+* Also be careful about what libraries (static or dynamic) you link
+  with your IMC or IMV. The TNCS or TNCC (or another IMC or IMV) may
+  have already loaded a different version of that library.
+
+* In general, it's best to keep your IMC or IMV as simple as
+  possible. If you have to do anything complex, consider doing it in a
+  separate process and using a simple interprocess communications
+   mechanism to communicate with that process from your IMC or IMV.
+
+* The bind function often returns TNC_RESULT_SUCCESS even if it
+  doesn't find the function you asked for. Always check the value
+  of the returned pointer for NULL.
+
+* The RequestHandshakeRetry function is just that, a request. The
+  TNCS or TNCC is not required to actually do a new handshake. It
+  should, however, return an error if it will not.
+
+Once you have things working in the simple IMCIMVTester, run a real
+test. Obtain a production-quality TNC implementation so you can test
+your code in a real-world environment with a multi-threaded server,
+802.1X, etc.
+
+To ensure complete compatibility, test with several different TNC
+products. The TNC conducts regular interoperability tests that will
+give you this opportunity. To participate in one of these "TNC
+PlugFests", email admin@trustedcomputinggroup.org.
+
+-----------
+
+Copyright(c) 2005-2013, Juniper Networks, Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+o Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+o Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in
+  the documentation and/or other materials provided with the  
+  distribution.
+o Neither the name of Juniper Networks nor the names of its
+  contributors may be used to endorse or promote products 
+  derived from this software without specific prior written 
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+POSSIBILITY OF SUCH DAMAGE.
